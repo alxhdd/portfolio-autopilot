@@ -141,6 +141,8 @@ The Action is intentionally straightforward bash — no obscure dependencies, no
 - **Repo limit** — the Action fetches up to 100 repos per page. If you have more than 100, you'll need to add pagination to the curl call.
 - **Output repo names** — if you want different names than `portfolio-projects` and `latest-and-greatest`, update the checkout steps and the commit/push steps accordingly.
 
+I have a CI/CD pipeline built around this so make sure you read the yml file in case you need to adjust. This workflow also triggers a rebuild.
+
 ---
 
 ## Why two output repos instead of one?
