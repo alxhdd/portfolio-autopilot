@@ -65,7 +65,7 @@ Change the `USERNAME` value at the top of the `env` block to your GitHub usernam
 
 ### 5. Add JSON file to your project(s)
 
-Copy contents of `portf.json` from this repo into the root of any project you want in the loop. Fill it in — or leave the placeholders and come back to it later. Mine is automatically added when I spin any new project, but you can handle it manually. 
+Copy contents of `portf.json` from this repo into the root of any project you want in the loop. Fill it in — or leave the placeholders and come back to it later. Mine is automatically added when I spin any new project, but you can handle it manually. In case you want to automate this as well [here is the code.](https://github.com/alxhdd/AI-Tooling)
 
 Trigger the Action manually once (**Actions → Auto-Update Portfolio → Run workflow**) to verify everything works.
 
