@@ -1,0 +1,18 @@
+{
+  "public_name": "Your Project Name",
+  "kicker": "One punchy line. What is it, really?",
+  "url": "https://your-project-url.com",
+  "description": "A short paragraph shown on the portfolio card. What does it do, why does it exist, what's interesting about it.",
+  "skip": false,
+  "portfolio": false,
+  "card_type": "standard",
+  "tech": ["Python", "FastAPI", "Docker"],
+  "detail_description": [
+    "Optional. Each string in this array is a paragraph in the expanded project view.",
+    "Leave as an empty array if you don't need it."
+  ],
+  "links": [
+    { "label": "live demo", "url": "https://your-project-url.com" },
+    { "label": "case study", "url": "https://medium.com/@you/your-article" }
+  ]
+}
