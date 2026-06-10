@@ -1,4 +1,4 @@
-# portfolio-automation
+# Portfolio Automation & green GitHub forever 🤖
 
 A dead-simple GitHub Action that scans your repos daily and keeps your portfolio current — automatically.
 
