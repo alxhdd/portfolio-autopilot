@@ -83,7 +83,7 @@ After that, it runs every day at 04:00 UTC on its own.
 | `description`        | string  | yes      | Short description for the portfolio card               |
 | `skip`               | boolean | yes      | Set to `true` to exclude this project entirely         |
 | `portfolio`          | boolean | yes      | Set to `true` to include in `showcase.json`            |
-| `card_type`          | string  | no       | `"standard"` or `"featured"`. Defaults to `"standard"` |
+| `card_type`          | string  | no       | Defaults to `"standard"`. I use it for different frontend renders |
 | `tech`               | array   | no       | Tech stack tags                                        |
 | `detail_description` | array   | no       | Array of paragraphs for an expanded project view       |
 | `links`              | array   | no       | CTA links. Each needs a `label` and `url`              |
