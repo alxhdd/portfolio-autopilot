@@ -24,7 +24,7 @@ jobs:
           ref: main
           path: dst-showcase
           token: ${{ secrets.GH_TOKEN }}
-
+    
       # Check out the repo that will hold latest.json (most recently worked on project)
       - name: Checkout latest-and-greatest repo
         uses: actions/checkout@v4
@@ -33,63 +33,63 @@ jobs:
           ref: main
           path: dst-latest
           token: ${{ secrets.GH_TOKEN }}
-
+    
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
-
+    
       - name: Scan repos and aggregate
         shell: bash
         run: |
           set -Eeuo pipefail
-
+    
           mkdir -p temp_meta
           echo "[]" > temp_meta/all_projects.json  # will accumulate all portfolio projects
           : > repo_dates.txt                        # will track commit dates for latest.json
-
+    
           echo "Fetching repos for $USERNAME…"
-
+    
           # ── Fetch all repos for the authenticated user (up to 100) ──────────────────
           # If you have more than 100 repos, add pagination here.
           resp=$(curl -s -w "\n%{http_code}" -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/user/repos?per_page=100")
           body=$(echo "$resp" | sed '$d'); code=$(echo "$resp" | tail -n1)
           [ "$code" = "200" ] || { echo "❌ /user/repos HTTP $code"; echo "$body"; exit 1; }
-
+    
           # Extract repo full names and default branches as tab-separated pairs
           pairs=$(echo "$body" | jq -r '.[] | [.full_name, .default_branch] | @tsv')
-
+    
           # ── Loop through every repo ───────────────────────────────────────────────
           while IFS=$'\t' read -r owner_repo branch; do
             [ -z "$owner_repo" ] && continue
             repo="${owner_repo#*/}"
-
+    
             # Skip the repo that hosts this Action to avoid circular references.
             # Update this if your Action lives in a differently named repo.
             if [ "$repo" == "portfolio-projects-bot" ]; then
               continue
             fi
-
+    
             echo "::group::Checking $owner_repo"
-
+    
             # ── Check if portf.json exists in this repo ───────────────────────────
             url="https://api.github.com/repos/$owner_repo/contents/portf.json?ref=$branch"
             cont=$(curl -s -w "\n%{http_code}" -H "Authorization: token $GITHUB_TOKEN" "$url")
             cbody=$(echo "$cont" | sed '$d'); ccode=$(echo "$cont" | tail -n1)
-
+    
             # If no portf.json found, skip this repo entirely
             if [ "$ccode" != "200" ] || ! echo "$cbody" | jq -e '.type=="file"' >/dev/null 2>&1; then
               echo "::endgroup::"
               continue
             fi
-
+    
             # Decode the file content (GitHub API returns base64) and save locally
             echo "$cbody" | jq -r '.content' | base64 -d > "temp_meta/$repo.json"
             jq -c . "temp_meta/$repo.json" > "temp_meta/$repo.json.tmp" && mv "temp_meta/$repo.json.tmp" "temp_meta/$repo.json"
-
+    
             # ── SHOWCASE: add to showcase.json if portfolio flag is true ──────────
             if jq -e '.portfolio == true' "temp_meta/$repo.json" >/dev/null 2>&1; then
               echo "✅ Portfolio: adding $repo..."
-
+    
               # Extract only the fields the portfolio needs, with safe fallbacks
               # for any missing values. Keeps showcase.json clean and predictable.
               clean_obj=$(jq -c '{
@@ -103,58 +103,58 @@ jobs:
                 detail_description: (.detail_description // null),
                 links:              (.links              // [])
               }' "temp_meta/$repo.json")
-
+    
               # Append this project to the running list
               jq --argjson new "$clean_obj" '. + [$new]' temp_meta/all_projects.json > temp_meta/tmp.json
               mv temp_meta/tmp.json temp_meta/all_projects.json
             fi
-
+    
             # ── LATEST: record commit date so we can find the most active repo ────
             # Fetches only the single most recent commit for efficiency
             committed_at=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
               "https://api.github.com/repos/$owner_repo/commits?per_page=1" \
               | jq -r '.[0].commit.author.date // empty')
-
+    
             if [ -n "$committed_at" ]; then
               echo "$committed_at $repo" >> repo_dates.txt
             fi
-
+    
             echo "::endgroup::"
           done <<< "$pairs"
-
+    
           # ── Write showcase.json ──────────────────────────────────────────────────
           # This is what your portfolio page fetches to render all projects
           cp temp_meta/all_projects.json dst-showcase/showcase.json
-
+    
           # Auto-generate a README for the portfolio-projects repo
           cat << 'README_EOF' > "dst-showcase/README.md"
           # 📂 Portfolio Projects
-
+    
           > *A curated, auto-generated collection of my favorite builds — updated daily.*
-
+    
           This repository is part of my [portfolio](https://YOUR_SITE_URL) automation system.
           A GitHub Action scans all my repos for `portf.json` files and aggregates projects
           flagged with `"portfolio": true` into `showcase.json`.
-
+    
           ### 🌟 The Showcase
           README_EOF
-
+    
           if [ "$(jq 'length' temp_meta/all_projects.json)" -gt 0 ]; then
             jq -r '.[] | "- **[\(.public_name)](\(.url))** — \(.description)\n"' \
               temp_meta/all_projects.json >> "dst-showcase/README.md"
           else
             echo "_No projects currently flagged for the portfolio._" >> "dst-showcase/README.md"
           fi
-
+    
           cat << 'README_EOF2' >> "dst-showcase/README.md"
-
+    
           ---
-
+    
           ### 🔗 Related
           - [Latest & Greatest](https://github.com/YOUR_GITHUB_USERNAME/latest-and-greatest)
           - [My portfolio](https://YOUR_SITE_URL)
           README_EOF2
-
+    
           # ── Write latest.json ────────────────────────────────────────────────────
           # Sort all recorded commit dates, pick the most recent repo, copy its portf.json
           # This is what your bio page fetches for the "currently working on" component
@@ -162,30 +162,30 @@ jobs:
             latest_repo=$(sort repo_dates.txt | tail -n 1 | awk '{print $2}')
             echo "Latest repo: $latest_repo"
             cp "temp_meta/$latest_repo.json" "dst-latest/latest.json"
-
+    
             # Auto-generate a README for the latest-and-greatest repo
             cat << 'README_EOF3' > "dst-latest/README.md"
           # 📡 Latest & Greatest
-
+    
           > *The project I'm actively working on — updated daily.*
-
+    
           Part of my [portfolio](https://YOUR_SITE_URL) automation system. A GitHub Action
           scans all my repos for `portf.json` files and surfaces the one with the most
           recent commit into `latest.json`.
-
+    
           ### 🚀 Currently Working On
           README_EOF3
-
+    
             jq -r '
               "**Project:** [\(.public_name // "Unknown")](\(.url // "#"))\n\n" +
               "\(.description // "No description.")\n\n" +
               "_Last synced: '"$(date -u +%F)"' UTC_"' \
               "temp_meta/$latest_repo.json" >> "dst-latest/README.md"
-
+    
             cat << 'README_EOF4' >> "dst-latest/README.md"
-
+    
           ---
-
+    
           ### 🔗 Related
           - [Portfolio Projects](https://github.com/YOUR_GITHUB_USERNAME/portfolio-projects)
           - [My portfolio](https://YOUR_SITE_URL)
@@ -194,7 +194,7 @@ jobs:
             # No repos had commit dates — write an empty object as a safe fallback
             echo '{}' > "dst-latest/latest.json"
           fi
-
+    
       # ── Commit showcase.json to portfolio-projects ──────────────────────────────
       # Only commits if the file actually changed — no noise commits
       - name: Commit and push portfolio-projects
@@ -211,7 +211,7 @@ jobs:
           else
             echo "No changes to commit in portfolio-projects."
           fi
-
+    
       # ── Commit latest.json to latest-and-greatest ───────────────────────────────
       # Same logic — only commits when something actually changed
       - name: Commit and push latest-and-greatest
@@ -228,7 +228,7 @@ jobs:
           else
             echo "No changes to commit in latest-and-greatest."
           fi
-
+    
       # ── Trigger a rebuild of your portfolio site ─────────────────────────────────
       # Uses a repository_dispatch event — your portfolio's deploy workflow should
       # listen for the "deploy-portfolio" event type.
